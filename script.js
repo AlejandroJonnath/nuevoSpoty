@@ -1,55 +1,87 @@
 let player;
 let isLooping = false;
 
-function onYouTubeIframeAPIReady() { // Función que se ejecuta cuando la API de YouTube está lista
-    player = new YT.Player('player', { // Crea un nuevo objeto de jugador de YouTube
-        height: '250', // Altura del reproductor
-        width: '100%', // Ancho del reproductor
-        videoId: 'LbEetr1UpxE', // ID del video a reproducir
-        playerVars: { 'playsinline': 1 }, // Parámetros del reproductor
-        events: { // Eventos que se pueden escuchar
-            'onStateChange': onPlayerStateChange // Cambio de estado del reproductor
+// Cargar el reproductor de YouTube
+function onYouTubeIframeAPIReady() {
+    player = new YT.Player('player', {
+        height: '250',
+        width: '100%',
+        videoId: 'LbEetr1UpxE', // ID del video inicial
+        playerVars: { 'playsinline': 1 }, // Reproducción en pantalla completa
+        events: {
+            'onStateChange': onPlayerStateChange // Evento para repetir la canción
         }
     });
 
-    fetchVideoTitle('LbEetr1UpxE'); // Obtiene el título del video
+    fetchVideoTitle('LbEetr1UpxE'); // Obtener el título de la canción inicial
 }
 
-document.getElementById("play").addEventListener("click", function() { // Agrega un evento de clic al botón de play
-    if (player) player.playVideo(); // Reproduce el video
+// Eventos de los botones
+document.getElementById("play").addEventListener("click", () => { // Reproducir la canción
+    if (player) player.playVideo();
 });
 
-document.getElementById("pause").addEventListener("click", function() { // Agrega un evento de clic al botón de pause
-    if (player) player.pauseVideo(); // Pausa el video
+document.getElementById("pause").addEventListener("click", () => { // Pausar la canción
+    if (player) player.pauseVideo();
 });
 
-document.getElementById("loop").addEventListener("click", function() { // Agrega un evento de clic al botón de loop
-    isLooping = !isLooping; // Cambia el estado de loop
-    this.style.background = isLooping ? "#00ff00" : "#0ff"; // Cambia el color del botón
+document.getElementById("loop").addEventListener("click", function() { // Repetir la canción
+    isLooping = !isLooping;
+    this.style.background = isLooping ? "#00ff00" : "#0ff";
 });
 
-document.querySelectorAll(".song-btn").forEach(button => { // Agrega un evento de clic a cada botón de canción
-    button.addEventListener("click", function() { // Obtiene el ID del video
-        let videoId = this.getAttribute("data-video"); // Carga el video en el reproductor
-        player.loadVideoById(videoId); // Reproduce el video
-        fetchVideoTitle(videoId); // Obtiene el título del video
-        player.playVideo(); // Reproduce el video
+ // Reproducir canciones
+document.querySelectorAll(".song-btn").forEach(button => {
+    button.addEventListener("click", function() {
+        const videoId = this.getAttribute("data-video"); // Obtener el ID del video
+        player.loadVideoById(videoId); // Cargar el video
+        fetchVideoTitle(videoId); // Obtener el título
+        player.playVideo(); // Reproducir el video
     });
 });
 
-function onPlayerStateChange(event) { // Función que se ejecuta cuando cambia el estado del reproductor
-    if (isLooping && event.data === YT.PlayerState.ENDED) { // Si el video ha terminado y loop está activado
-        player.playVideo(); // Reproduce el video
+// Función para cambiar el título de la canción
+function onPlayerStateChange(event) {
+    if (isLooping && event.data === YT.PlayerState.ENDED) { // Repetir la canción
+        player.playVideo();
     }
 }
 
-function fetchVideoTitle(videoId) {  // Función que obtiene el título del video
-    fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`)   // Hace una petición a la API de YouTube
-        .then(response => response.json()) // Convierte la respuesta a JSON
-        .then(data => { // Obtiene el título del video
-            document.getElementById("song-title").innerText = data.title || "Canción Desconocida"; // Si no hay título, se muestra "Canción Desconocida"
+// Función para obtener el título de la canción
+function fetchVideoTitle(videoId) {
+    fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`) // API para obtener el título
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("song-title").innerText = data.title || "Canción Desconocida"; // Mostrar el título
         })
-        .catch(() => { // Si hay un error
-            document.getElementById("song-title").innerText = "No se pudo obtener el título"; // Muestra un mensaje de error
+        .catch(() => {
+            document.getElementById("song-title").innerText = "No se pudo obtener el título"; // Mostrar error
         });
 }
+
+ // Path: script.js (Parte 2)
+// Reproducir canciones con tiempo de inicio
+function playSong(songId, startTime = 0) {
+    const videoContainer = document.getElementById('video-container');
+    const videoFrame = document.createElement('iframe');
+
+    videoFrame.setAttribute('width', '100%');
+    videoFrame.setAttribute('height', '100%');
+    videoFrame.setAttribute('src', `https://www.youtube.com/embed/${songId}?autoplay=1&mute=0&start=${startTime}`);
+    videoFrame.setAttribute('frameborder', '0');
+    videoFrame.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+    videoFrame.setAttribute('allowfullscreen', 'true');
+
+    // Limpiar cualquier video anterior
+    videoContainer.innerHTML = '';
+    videoContainer.appendChild(videoFrame);
+}
+
+// Modificar evento para leer el tiempo de inicio si existe
+document.querySelectorAll('.song-btn').forEach(button => {
+    button.addEventListener('click', () => {
+        const songId = button.getAttribute('data-video');
+        const startTime = button.getAttribute('data-start') || 0;
+        playSong(songId, startTime);
+    });
+});
